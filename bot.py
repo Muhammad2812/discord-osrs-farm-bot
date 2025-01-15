@@ -55,6 +55,20 @@ async def on_ready():
 async def check_times():
     current_time = datetime.now(gmt_plus_2)
     time_str = current_time.strftime("%H:%M")
+    
+    # Check if it's midnight to update hardwood day
+    if time_str == "00:00":
+        for guild_id in hardwood_days.keys():
+            current_day = hardwood_days[guild_id]
+            # Update to next day (1->2->3->4->1)
+            hardwood_days[guild_id] = current_day % 4 + 1
+            
+            # Get channel to announce day change
+            channel_id = notification_channels.get(guild_id)
+            if channel_id:
+                channel = bot.get_channel(channel_id)
+                if channel:
+                    await channel.send(f"🌲 Hardwood day has automatically updated to Day {hardwood_days[guild_id]}")
 
     # Check each registered channel
     for guild_id, channel_id in notification_channels.items():
