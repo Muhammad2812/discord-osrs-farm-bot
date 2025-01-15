@@ -128,6 +128,131 @@ async def check_status(ctx):
     else:
         await ctx.send("No hardwood day set! Use !sethardwoodday to set one.")
 
+def get_next_times(current_time_str, times_list, count=1):
+    """Get the next N times from a list of times"""
+    # Convert all times to minutes for easier comparison
+    current_hours, current_minutes = map(int, current_time_str.split(':'))
+    current_total_minutes = current_hours * 60 + current_minutes
+    
+    # Convert time strings to minutes
+    times_in_minutes = []
+    for time_str in times_list:
+        hours, minutes = map(int, time_str.split(':'))
+        total_minutes = hours * 60 + minutes
+        times_in_minutes.append((total_minutes, time_str))
+    
+    # Sort times
+    times_in_minutes.sort()
+    
+    # Find next times
+    next_times = []
+    for _ in range(count):
+        found = False
+        for minutes, time_str in times_in_minutes:
+            if minutes > current_total_minutes:
+                next_times.append(time_str)
+                found = True
+                break
+        if not found and times_in_minutes:  # If not found, take from start of next day
+            next_times.append(times_in_minutes[0][1])
+        current_total_minutes = int(next_times[-1].split(':')[0]) * 60 + int(next_times[-1].split(':')[1])
+    
+    return next_times
+
+@bot.command(name='next')
+async def next_times(ctx):
+    """Show next farming time for each category"""
+    current_time = datetime.now(gmt_plus_2)
+    current_time_str = current_time.strftime("%H:%M")
+    
+    embed = discord.Embed(title="Next Farming Times", color=0x00ff00)
+    
+    # Trees and Mushrooms
+    next_tree = get_next_times(current_time_str, TREES_MUSHROOMS)[0]
+    embed.add_field(name="🌳 Trees & Mushrooms", value=f"Next: {next_tree}", inline=False)
+    
+    # Fruit Trees
+    next_fruit = get_next_times(current_time_str, FRUIT_TREES)[0]
+    embed.add_field(name="🍎 Fruit Trees, Calquat, Celastrus", value=f"Next: {next_fruit}", inline=False)
+    
+    # Hardwoods
+    current_day = hardwood_days.get(ctx.guild.id, 1)
+    next_hardwood = get_next_times(current_time_str, HARDWOOD_CYCLES[current_day])[0]
+    embed.add_field(name=f"🌲 Hardwoods (Day {current_day})", value=f"Next: {next_hardwood}", inline=False)
+    
+    # Herbs and Bushes
+    next_herb = get_next_times(current_time_str, HERBS_BUSHES)[0]
+    embed.add_field(name="🌿 Herbs & Bushes", value=f"Next: {next_herb}", inline=False)
+    
+    await ctx.send(embed=embed)
+
+@bot.command(name='next5')
+async def next_five_times(ctx):
+    """Show next 5 farming times for each category"""
+    current_time = datetime.now(gmt_plus_2)
+    current_time_str = current_time.strftime("%H:%M")
+    
+    embed = discord.Embed(title="Next 5 Farming Times", color=0x00ff00)
+    
+    # Trees and Mushrooms
+    next_trees = get_next_times(current_time_str, TREES_MUSHROOMS, 5)
+    embed.add_field(name="🌳 Trees & Mushrooms", value="\n".join(next_trees), inline=False)
+    
+    # Fruit Trees
+    next_fruits = get_next_times(current_time_str, FRUIT_TREES, 5)
+    embed.add_field(name="🍎 Fruit Trees, Calquat, Celastrus", value="\n".join(next_fruits), inline=False)
+    
+    # Hardwoods
+    current_day = hardwood_days.get(ctx.guild.id, 1)
+    next_hardwoods = get_next_times(current_time_str, HARDWOOD_CYCLES[current_day], 5)
+    embed.add_field(name=f"🌲 Hardwoods (Day {current_day})", value="\n".join(next_hardwoods), inline=False)
+    
+    # Herbs and Bushes
+    next_herbs = get_next_times(current_time_str, HERBS_BUSHES, 5)
+    embed.add_field(name="🌿 Herbs & Bushes", value="\n".join(next_herbs), inline=False)
+    
+    await ctx.send(embed=embed)
+
+@bot.command(name='times')
+async def show_category_times(ctx, category: str):
+    """Show all times for a specific category"""
+    category = category.lower()
+    embed = discord.Embed(color=0x00ff00)
+    
+    if category in ['trees', 'tree', 'mushroom', 'mushrooms']:
+        embed.title = "🌳 Trees & Mushrooms Times"
+        times_list = TREES_MUSHROOMS
+    elif category in ['fruit', 'fruittrees', 'calquat', 'celastrus']:
+        embed.title = "🍎 Fruit Trees, Calquat, Celastrus Times"
+        times_list = FRUIT_TREES
+    elif category in ['hardwood', 'hardwoods', 'redwood', 'anima', 'hespori']:
+        current_day = hardwood_days.get(ctx.guild.id, 1)
+        embed.title = f"🌲 Hardwoods Times (Day {current_day})"
+        times_list = HARDWOOD_CYCLES[current_day]
+    elif category in ['herbs', 'herb', 'bush', 'bushes']:
+        embed.title = "🌿 Herbs & Bushes Times"
+        times_list = HERBS_BUSHES
+    else:
+        await ctx.send("Invalid category. Valid categories are: trees, fruit, hardwood, herbs")
+        return
+    
+    # Sort times for display
+    sorted_times = sorted(times_list, key=lambda x: tuple(map(int, x.split(':'))))
+    
+    # Split into multiple fields if needed (Discord has a 1024 character limit per field)
+    times_str = ""
+    for time in sorted_times:
+        if len(times_str) + len(time) + 2 > 1024:  # +2 for the newline
+            embed.add_field(name="Times", value=times_str, inline=False)
+            times_str = time + "\n"
+        else:
+            times_str += time + "\n"
+    
+    if times_str:
+        embed.add_field(name="Times", value=times_str, inline=False)
+    
+    await ctx.send(embed=embed)
+
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
