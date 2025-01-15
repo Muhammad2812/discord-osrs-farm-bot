@@ -54,7 +54,7 @@ async def on_ready():
 @tasks.loop(minutes=1)
 async def check_times():
     current_time = datetime.now(gmt_plus_2)
-    time_str = current_time.strftime("%H:%M")
+    time_str = current_time.strftime("%-H:%M")
     
     print(f"Checking time: {time_str}")  # Debug log
     
