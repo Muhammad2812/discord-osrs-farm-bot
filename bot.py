@@ -276,7 +276,7 @@ async def show_category_times(ctx, category: str):
 async def check_time(ctx):
     """Check the current bot time"""
     current_time = datetime.now(gmt_plus_2)
-    time_str = current_time.strftime("%H:%M")
+    time_str = current_time.strftime("%-H:%M")
     await ctx.send(f"Current bot time (GMT+2): {time_str}")
 
 @bot.event
