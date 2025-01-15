@@ -56,12 +56,16 @@ async def check_times():
     current_time = datetime.now(gmt_plus_2)
     time_str = current_time.strftime("%H:%M")
     
+    print(f"Checking time: {time_str}")  # Debug log
+    
     # Check if it's midnight to update hardwood day
     if time_str == "00:00":
+        print("Midnight detected - updating hardwood days")  # Debug log
         for guild_id in hardwood_days.keys():
             current_day = hardwood_days[guild_id]
             # Update to next day (1->2->3->4->1)
             hardwood_days[guild_id] = current_day % 4 + 1
+            print(f"Updated hardwood day for guild {guild_id} to {hardwood_days[guild_id]}")  # Debug log
             
             # Get channel to announce day change
             channel_id = notification_channels.get(guild_id)
@@ -71,15 +75,20 @@ async def check_times():
                     await channel.send(f"🌲 Hardwood day has automatically updated to Day {hardwood_days[guild_id]}")
 
     # Check each registered channel
+    print(f"Registered channels: {notification_channels}")  # Debug log
     for guild_id, channel_id in notification_channels.items():
+        print(f"Checking guild {guild_id}, channel {channel_id}")  # Debug log
         channel = bot.get_channel(channel_id)
         if not channel:
+            print(f"Could not find channel {channel_id}")  # Debug log
             continue
 
         current_day = hardwood_days.get(guild_id, 1)
+        print(f"Current hardwood day for guild {guild_id}: {current_day}")  # Debug log
 
         # Check Trees/Mushrooms
         if time_str in TREES_MUSHROOMS:
+            print(f"Found tree time match: {time_str}")  # Debug log
             await channel.send("🌳 **Trees and Mushrooms** are ready to be checked!")
 
         # Check Fruit Trees
@@ -114,19 +123,29 @@ async def set_hardwood_day(ctx, day: int):
 @bot.command(name='status')
 async def check_status(ctx):
     """Check the current status of the bot for this server"""
-    channel_id = notification_channels.get(ctx.guild.id)
-    day = hardwood_days.get(ctx.guild.id)
+    # Get current time in GMT+2
+    current_time = datetime.now(gmt_plus_2)
+    time_str = current_time.strftime("%H:%M")
     
+    embed = discord.Embed(title="Bot Status", color=0x00ff00)
+    embed.add_field(name="Current Time (GMT+2)", value=time_str, inline=False)
+    
+    # Channel status
+    channel_id = notification_channels.get(ctx.guild.id)
     if channel_id:
         channel = bot.get_channel(channel_id)
-        await ctx.send(f"Notifications are set to: {channel.mention}")
+        embed.add_field(name="Notification Channel", value=channel.mention, inline=False)
     else:
-        await ctx.send("No notification channel set! Use !setchannel to set one.")
+        embed.add_field(name="Notification Channel", value="Not set! Use !setchannel", inline=False)
     
+    # Hardwood day status
+    day = hardwood_days.get(ctx.guild.id)
     if day:
-        await ctx.send(f"Current hardwood day: {day}")
+        embed.add_field(name="Hardwood Day", value=str(day), inline=False)
     else:
-        await ctx.send("No hardwood day set! Use !sethardwoodday to set one.")
+        embed.add_field(name="Hardwood Day", value="Not set! Use !sethardwoodday", inline=False)
+    
+    await ctx.send(embed=embed)
 
 def get_next_times(current_time_str, times_list, count=1):
     """Get the next N times from a list of times"""
@@ -252,6 +271,13 @@ async def show_category_times(ctx, category: str):
         embed.add_field(name="Times", value=times_str, inline=False)
     
     await ctx.send(embed=embed)
+
+@bot.command(name='time')
+async def check_time(ctx):
+    """Check the current bot time"""
+    current_time = datetime.now(gmt_plus_2)
+    time_str = current_time.strftime("%H:%M")
+    await ctx.send(f"Current bot time (GMT+2): {time_str}")
 
 @bot.event
 async def on_command_error(ctx, error):
