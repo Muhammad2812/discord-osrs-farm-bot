@@ -130,41 +130,50 @@ async def set_hardwood_day(ctx, day: int):
 @bot.command(name='notify')
 @commands.has_permissions(administrator=True)
 async def notify(ctx, category: str, status: str):
+    """Toggle notifications for specific categories"""
+    global fruit_calquat_celastrus_flag, herbs_bushes_flag, tree_mushrooms_flag
+    
     category = category.lower()
     status = status.lower()
     
     if category in ['trees', 'tree', 'mushroom', 'mushrooms']:
         if status == 'on':
-            tree_mushrooms_flag=1
+            tree_mushrooms_flag = 1
+            await ctx.send("🌳 Tree & Mushroom notifications turned ON")
         elif status == 'off':
-            tree_mushrooms_flag=0
+            tree_mushrooms_flag = 0
+            await ctx.send("🌳 Tree & Mushroom notifications turned OFF")
         else:
-            await ctx.send("Invalid status. Valid status are: on , off")
+            await ctx.send("Invalid status. Valid status are: on, off")
+            
     elif category in ['fruit', 'fruittrees', 'calquat', 'celastrus']:
         if status == 'on':
-            fruit_calquat_celastrus_flag=1
+            fruit_calquat_celastrus_flag = 1
+            await ctx.send("🍎 Fruit Trees notifications turned ON")
         elif status == 'off':
-            fruit_calquat_celastrus_flag=0
+            fruit_calquat_celastrus_flag = 0
+            await ctx.send("🍎 Fruit Trees notifications turned OFF")
         else:
-            await ctx.send("Invalid status. Valid status are: on , off")
+            await ctx.send("Invalid status. Valid status are: on, off")
     
     elif category in ['herbs', 'herb', 'bush', 'bushes']:
         if status == 'on':
-            herbs_bushes_flag=1
+            herbs_bushes_flag = 1
+            await ctx.send("🌿 Herbs & Bushes notifications turned ON")
         elif status == 'off':
-            herbs_bushes_flag=0
+            herbs_bushes_flag = 0
+            await ctx.send("🌿 Herbs & Bushes notifications turned OFF")
         else:
-            await ctx.send("Invalid status. Valid status are: on , off")
+            await ctx.send("Invalid status. Valid status are: on, off")
     else:
-        await ctx.send("Invalid category. Valid categories are: trees, fruit, hardwood, herbs")
+        await ctx.send("Invalid category. Valid categories are: trees, fruit, herbs")
         return
-
 @bot.command(name='status')
 async def check_status(ctx):
     """Check the current status of the bot for this server"""
     # Get current time in GMT+2
     current_time = datetime.now(gmt_plus_2)
-    time_str = current_time.strftime("%H:%M")
+    time_str = current_time.strftime("%-H:%M")
     
     embed = discord.Embed(title="Bot Status", color=0x00ff00)
     embed.add_field(name="Current Time (GMT+2)", value=time_str, inline=False)
@@ -183,6 +192,14 @@ async def check_status(ctx):
         embed.add_field(name="Hardwood Day", value=str(day), inline=False)
     else:
         embed.add_field(name="Hardwood Day", value="Not set! Use !sethardwoodday", inline=False)
+    
+    # Notification status
+    notifications_status = (
+        f"🌳 Trees & Mushrooms: {'ON' if tree_mushrooms_flag else 'OFF'}\n"
+        f"🍎 Fruit Trees: {'ON' if fruit_calquat_celastrus_flag else 'OFF'}\n"
+        f"🌿 Herbs & Bushes: {'ON' if herbs_bushes_flag else 'OFF'}"
+    )
+    embed.add_field(name="Notification Status", value=notifications_status, inline=False)
     
     await ctx.send(embed=embed)
 
