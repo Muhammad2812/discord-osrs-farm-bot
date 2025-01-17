@@ -45,6 +45,10 @@ HERBS_BUSHES = ["0:17", "0:37", "0:57", "1:17", "1:37", "1:57", "2:17", "2:37", 
 notification_channels = {}
 # Current day in the hardwood cycle (1-4) for each server
 hardwood_days = {}
+#notification flags
+fruit_calquat_celastrus_flag = 1
+herbs_bushes_flag  = 1
+tree_mushrooms_flag = 1
 
 @bot.event
 async def on_ready():
@@ -59,7 +63,7 @@ async def check_times():
     print(f"Checking time: {time_str}")  # Debug log
     
     # Check if it's midnight to update hardwood day
-    if time_str == "00:00":
+    if time_str == "0:00":
         print("Midnight detected - updating hardwood days")  # Debug log
         for guild_id in hardwood_days.keys():
             current_day = hardwood_days[guild_id]
@@ -89,11 +93,13 @@ async def check_times():
         # Check Trees/Mushrooms
         if time_str in TREES_MUSHROOMS:
             print(f"Found tree time match: {time_str}")  # Debug log
-            await channel.send("🌳 **Trees and Mushrooms** are ready to be checked!")
+            if tree_mushrooms_flag:
+                await channel.send("🌳 **Trees and Mushrooms** are ready to be checked!")
 
         # Check Fruit Trees
         if time_str in FRUIT_TREES:
-            await channel.send("🍎 **Fruit Trees, Calquat, and Celastrus** are ready to be checked!")
+            if fruit_calquat_celastrus_flag:
+                await channel.send("🍎 **Fruit Trees, Calquat, and Celastrus** are ready to be checked!")
 
         # Check Hardwoods based on current day
         if time_str in HARDWOOD_CYCLES[current_day]:
@@ -101,7 +107,8 @@ async def check_times():
 
         # Check Herbs/Bushes
         if time_str in HERBS_BUSHES:
-            await channel.send("🌿 **Herbs and Bushes** are ready to be checked!")
+            if herbs_bushes_flag:
+                await channel.send("🌿 **Herbs and Bushes** are ready to be checked!")
 
 @bot.command(name='setchannel')
 @commands.has_permissions(administrator=True)
@@ -119,6 +126,38 @@ async def set_hardwood_day(ctx, day: int):
         await ctx.send(f"Hardwood cycle day set to: {day}")
     else:
         await ctx.send("Please provide a day between 1 and 4")
+
+@bot.command(name='notify')
+@commands.has_permissions(administrator=True)
+async def notify(ctx, category: str, status: str):
+    category = category.lower()
+    status = status.lower()
+    
+    if category in ['trees', 'tree', 'mushroom', 'mushrooms']:
+        if status == 'on':
+            tree_mushrooms_flag=1
+        elif status == 'off':
+            tree_mushrooms_flag=0
+        else:
+            await ctx.send("Invalid status. Valid status are: on , off")
+    elif category in ['fruit', 'fruittrees', 'calquat', 'celastrus']:
+        if status == 'on':
+            fruit_calquat_celastrus_flag=1
+        elif status == 'off':
+            fruit_calquat_celastrus_flag=0
+        else:
+            await ctx.send("Invalid status. Valid status are: on , off")
+    
+    elif category in ['herbs', 'herb', 'bush', 'bushes']:
+        if status == 'on':
+            herbs_bushes_flag=1
+        elif status == 'off':
+            herbs_bushes_flag=0
+        else:
+            await ctx.send("Invalid status. Valid status are: on , off")
+    else:
+        await ctx.send("Invalid category. Valid categories are: trees, fruit, hardwood, herbs")
+        return
 
 @bot.command(name='status')
 async def check_status(ctx):
